@@ -1,5 +1,6 @@
 package com.nttdata.transactions.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
@@ -28,6 +29,7 @@ public class Transaction {
     private ObjectId idProduct;
     private int collection;
     private int type;
+    @JsonFormat(pattern = "dd/MM/yyyy")
     private LocalDateTime date;
     @Field(targetType = FieldType.DECIMAL128)
     private BigDecimal amount;

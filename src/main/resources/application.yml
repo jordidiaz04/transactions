@@ -1,0 +1,21 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    shutdown:
+      enable: 'true'
+    health:
+      show-details: always
+server:
+  port: '8083'
+spring:
+  data:
+    mongodb:
+      database: mongobd
+      port: '27017'
+      host: localhost
+logging:
+  level:
+    root: info

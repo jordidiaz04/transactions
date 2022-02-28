@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,9 +27,9 @@ public class TransactionController {
 
     @PostMapping("/create/{idProduct}/{collection}")
     @ResponseStatus(CREATED)
-    public void create(@PathVariable String idProduct,
-                       @PathVariable int collection,
-                       BigDecimal amount) {
+    public Mono<Transaction> create(@PathVariable String idProduct,
+                                    @PathVariable int collection,
+                                    BigDecimal amount) {
         Transaction transaction = new Transaction();
         transaction.setIdProduct(new ObjectId(idProduct));
         transaction.setCollection(collection);
@@ -36,6 +37,6 @@ public class TransactionController {
         transaction.setDate(LocalDateTime.now());
         transaction.setAmount(amount);
 
-        transactionService.create(transaction);
+        return transactionService.create(transaction);
     }
 }
