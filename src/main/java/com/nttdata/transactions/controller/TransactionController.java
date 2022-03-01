@@ -5,6 +5,7 @@ import com.nttdata.transactions.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -18,6 +19,7 @@ import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
 @RequiredArgsConstructor
 public class TransactionController {
     private final TransactionService transactionService;
+    private final WebClient webClient;
 
     @GetMapping(value = "/get/{idProduct}/{collection}", produces = TEXT_EVENT_STREAM_VALUE)
     public Flux<Transaction> findByIdProductAndCollection(@PathVariable String idProduct,
@@ -36,7 +38,16 @@ public class TransactionController {
         transaction.setType(amount.compareTo(BigDecimal.valueOf(0)) > 0 ? 1 : 2);
         transaction.setDate(LocalDateTime.now());
         transaction.setAmount(amount);
+        Mono<Transaction> response = transactionService.create(transaction);
 
-        return transactionService.create(transaction);
+        String path = collection == 1 ? "http://localhost:8081" : "http://localhost:8082";
+        String url = path + "/update/{id}/balance?amount={amount}";
+        webClient.post()
+                .uri(url, idProduct, amount)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .subscribe();
+
+        return response;
     }
 }
