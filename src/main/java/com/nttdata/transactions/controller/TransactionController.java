@@ -40,8 +40,8 @@ public class TransactionController {
         transaction.setAmount(amount);
         Mono<Transaction> response = transactionService.create(transaction);
 
-        String path = collection == 1 ? "http://localhost:8081" : "http://localhost:8082";
-        String url = path + "/update/{id}/balance?amount={amount}";
+        String path = collection == 1 ? "http://localhost:8081" : "http://localhost:8099/credits";
+        String url = path + "/balance/{id}/amount/{amount}";
         webClient.post()
                 .uri(url, idProduct, amount)
                 .retrieve()
