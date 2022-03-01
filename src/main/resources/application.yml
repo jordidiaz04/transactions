@@ -1,3 +1,15 @@
+server:
+  port: '8083'
+
+spring:
+  application:
+    name: transaction
+  config:
+    import: optional:configserver:http://localhost:9000
+  cloud:
+    config:
+      profile: dev
+
 management:
   endpoints:
     web:
@@ -5,17 +17,6 @@ management:
         include: '*'
   endpoint:
     shutdown:
-      enable: 'true'
-    health:
-      show-details: always
-server:
-  port: '8083'
-spring:
-  data:
-    mongodb:
-      database: mongobd
-      port: '27017'
-      host: localhost
-logging:
-  level:
-    root: info
+      enabled: 'true'
+    restart:
+      enabled: 'true'
