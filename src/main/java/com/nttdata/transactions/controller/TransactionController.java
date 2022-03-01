@@ -42,7 +42,7 @@ public class TransactionController {
 
         String path = collection == 1 ? "http://localhost:8081" : "http://localhost:8099/credits";
         String url = path + "/balance/{id}/amount/{amount}";
-        webClient.post()
+        webClient.put()
                 .uri(url, idProduct, amount)
                 .retrieve()
                 .bodyToMono(Void.class)
