@@ -50,4 +50,42 @@ public class TransactionController {
 
         return response;
     }
+
+    @PostMapping("/transfer/{idProduct1}/to/{idProduct2}")
+    @ResponseStatus(CREATED)
+    public Mono<String> transferBetweenAccounts(@PathVariable String idProduct1,
+                                                @PathVariable String idProduct2,
+                                                BigDecimal amount) {
+        int type = amount.compareTo(BigDecimal.valueOf(0)) > 0 ? 1 : 2;
+
+        Transaction exitTransaction = new Transaction();
+        exitTransaction.setIdProduct(new ObjectId(idProduct1));
+        exitTransaction.setCollection(1);
+        exitTransaction.setType(type);
+        exitTransaction.setDate(LocalDateTime.now());
+        exitTransaction.setAmount(amount);
+        transactionService.create(exitTransaction);
+
+        Transaction entryTransaction = new Transaction();
+        entryTransaction.setIdProduct(new ObjectId(idProduct2));
+        entryTransaction.setCollection(1);
+        entryTransaction.setType(type);
+        entryTransaction.setDate(LocalDateTime.now());
+        entryTransaction.setAmount(amount);
+        transactionService.create(entryTransaction);
+
+        String url = "http://localhost:8081/balance/{id}/amount/{amount}";
+        webClient.put()
+                .uri(url, idProduct1, amount)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .subscribe();
+        webClient.put()
+                .uri(url, idProduct2, amount)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .subscribe();
+
+        return Mono.just("Successful transfer");
+    }
 }
