@@ -1,20 +1,14 @@
 package com.nttdata.transactions.controller;
 
 import com.nttdata.transactions.model.Transaction;
-import com.nttdata.transactions.service.AccountService;
-import com.nttdata.transactions.service.CreditService;
 import com.nttdata.transactions.service.TransactionService;
 import lombok.RequiredArgsConstructor;
-import org.bson.types.ObjectId;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
-import static com.nttdata.transactions.utilities.Constants.TransactionType.*;
-import static com.nttdata.transactions.utilities.Constants.TransactionCollection.*;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
 
@@ -23,8 +17,6 @@ import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
 @RequestMapping("/transactions")
 public class TransactionController {
     private final TransactionService transactionService;
-    private final AccountService accountService;
-    private final CreditService creditService;
 
     @GetMapping(value = "/get/{idProduct}/{collection}", produces = TEXT_EVENT_STREAM_VALUE)
     public Flux<Transaction> findByIdProductAndCollection(@PathVariable String idProduct,
@@ -36,20 +28,7 @@ public class TransactionController {
     @ResponseStatus(CREATED)
     public Mono<String> depositAccount(@PathVariable String number,
                                        BigDecimal amount) {
-        return accountService.findAccount(number)
-                .flatMap(account -> {
-                    Transaction transaction = new Transaction();
-                    transaction.setIdProduct(new ObjectId(account.getId()));
-                    transaction.setCollection(ACCOUNT);
-                    transaction.setType(DEPOSIT);
-                    transaction.setDate(LocalDateTime.now());
-                    transaction.setAmount(amount);
-
-                    return transactionService.create(transaction).flatMap(transact -> {
-                        accountService.updateAccount(transaction.getIdProduct().toString(), amount);
-                        return Mono.just("Successful transaction");
-                    });
-                });
+        return transactionService.depositAccount(number, amount);
     }
 
     @PostMapping("/withdrawals/account/{number}")
@@ -57,20 +36,7 @@ public class TransactionController {
     public Mono<String> withdrawalsAccount(@PathVariable String number,
                                            BigDecimal amount) {
         BigDecimal finalAmount = amount.multiply(BigDecimal.valueOf(-1));
-
-        return accountService.findAccount(number)
-                .flatMap(account -> {
-                    Transaction transaction = new Transaction();
-                    transaction.setIdProduct(new ObjectId(account.getId()));
-                    transaction.setCollection(ACCOUNT);
-                    transaction.setType(WITHDRAWALS);
-                    transaction.setDate(LocalDateTime.now());
-                    transaction.setAmount(finalAmount);
-                    return transactionService.create(transaction).flatMap(transact -> {
-                        accountService.updateAccount(transaction.getIdProduct().toString(), finalAmount);
-                        return Mono.just("Successful transaction");
-                    });
-                });
+        return transactionService.withdrawalsAccount(number, finalAmount);
     }
 
     @PostMapping("/transfer/account/{exitNumber}/to/{entryNumber}")
@@ -79,51 +45,14 @@ public class TransactionController {
                                                 @PathVariable String entryNumber,
                                                 BigDecimal amount) {
         BigDecimal exitAmount = amount.multiply(BigDecimal.valueOf(-1));
-
-        return accountService.findAccount(exitNumber)
-                .flatMap(a -> accountService.findAccount(entryNumber).flatMap(b -> {
-                    Transaction exit = new Transaction();
-                    exit.setIdProduct(new ObjectId(a.getId()));
-                    exit.setCollection(ACCOUNT);
-                    exit.setType(TRANSFERS);
-                    exit.setDate(LocalDateTime.now());
-                    exit.setAmount(exitAmount);
-
-                    return transactionService.create(exit).flatMap(exitT -> {
-                        Transaction entry = new Transaction();
-                        entry.setIdProduct(new ObjectId(b.getId()));
-                        entry.setCollection(ACCOUNT);
-                        entry.setType(TRANSFERS);
-                        entry.setDate(LocalDateTime.now());
-                        entry.setAmount(amount);
-
-                        return transactionService.create(entry).flatMap(entryT -> {
-                            accountService.updateAccount(exit.getIdProduct().toString(), exitAmount);
-                            accountService.updateAccount(entry.getIdProduct().toString(), amount);
-
-                            return Mono.just("Successful transaction");
-                        });
-                    });
-                }));
+        return transactionService.transferBetweenAccounts(exitNumber, exitAmount, entryNumber, amount);
     }
 
     @PostMapping("/pay/credit/{number}")
     @ResponseStatus(CREATED)
     public Mono<String> payCredit(@PathVariable String number,
                                   BigDecimal amount) {
-        return creditService.findCredit(number)
-                .flatMap(account -> {
-                    Transaction transaction = new Transaction();
-                    transaction.setIdProduct(new ObjectId(account.getId()));
-                    transaction.setCollection(ACCOUNT);
-                    transaction.setType(DEPOSIT);
-                    transaction.setDate(LocalDateTime.now());
-                    transaction.setAmount(amount);
-                    transactionService.create(transaction);
-
-                    creditService.updateCredit(transaction.getIdProduct().toString(), amount);
-                    return Mono.just("Successful transaction");
-                });
+        return transactionService.payCredit(number, amount);
     }
 
     @PostMapping("/spend/credit/{number}")
@@ -131,19 +60,6 @@ public class TransactionController {
     public Mono<String> spendCredit(@PathVariable String number,
                                     BigDecimal amount) {
         BigDecimal finalAmount = amount.multiply(BigDecimal.valueOf(-1));
-
-        return creditService.findCredit(number)
-                .flatMap(account -> {
-                    Transaction transaction = new Transaction();
-                    transaction.setIdProduct(new ObjectId(account.getId()));
-                    transaction.setCollection(ACCOUNT);
-                    transaction.setType(WITHDRAWALS);
-                    transaction.setDate(LocalDateTime.now());
-                    transaction.setAmount(finalAmount);
-                    transactionService.create(transaction);
-                    creditService.updateCredit(transaction.getIdProduct().toString(), finalAmount);
-
-                    return Mono.just("Successful transaction");
-                });
+        return transactionService.spendCredit(number, finalAmount);
     }
 }

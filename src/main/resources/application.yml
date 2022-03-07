@@ -28,5 +28,5 @@ eureka:
 
 backend:
   service:
-    account: 'http://account'
-    credit: 'http://credit'
+    account: 'http://account-service/accounts'
+    credit: 'http://credit-service/credits'
