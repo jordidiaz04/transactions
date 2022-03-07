@@ -1,6 +1,6 @@
 package com.nttdata.transactions.service;
 
-import com.nttdata.transactions.dto.response.Account;
+import com.nttdata.transactions.dto.response.Credit;
 import com.nttdata.transactions.exceptions.customs.CustomNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,25 +14,25 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
-public class AccountServiceImpl implements AccountService {
-    @Value("${backend.service.account}")
-    private String urlAccount;
+public class CreditServiceImpl implements CreditService {
+    @Value("${backend.service.credit}")
+    private String urlCredit;
 
     private final WebClient webClient;
 
     @Override
-    public Mono<Account> findAccount(String number) {
+    public Mono<Credit> findCredit(String number) {
         return webClient.get()
-                .uri("{url}/get/number/{number}", urlAccount, number)
+                .uri("{url}/number/{number}", urlCredit, number)
                 .retrieve()
-                .onStatus(NOT_FOUND::equals, response -> Mono.error(new CustomNotFoundException("Account " + number + " not found")))
-                .bodyToMono(Account.class);
+                .onStatus(NOT_FOUND::equals, response -> Mono.error(new CustomNotFoundException("Credit " + number + " not found")))
+                .bodyToMono(Credit.class);
     }
 
     @Override
-    public void updateAccount(String id, BigDecimal amount) {
+    public void updateCredit(String id, BigDecimal amount) {
         webClient.put()
-                .uri("{url}/balance/{id}/amount/{amount}", urlAccount, id, amount)
+                .uri("{url}/balance/{id}/amount/{amount}", urlCredit, id, amount)
                 .retrieve()
                 .bodyToMono(Void.class)
                 .subscribe();
