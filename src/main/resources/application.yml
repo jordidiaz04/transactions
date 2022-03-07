@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: transaction
+    name: transaction-service
   config:
     import: optional:configserver:http://localhost:9000
   cloud:

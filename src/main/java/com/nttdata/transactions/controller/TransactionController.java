@@ -20,6 +20,7 @@ import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/transactions")
 public class TransactionController {
     private final TransactionService transactionService;
     private final AccountService accountService;
