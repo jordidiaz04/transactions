@@ -23,7 +23,7 @@ public class CreditServiceImpl implements CreditService {
     @Override
     public Mono<Credit> findCredit(String number) {
         return webClient.get()
-                .uri("{url}/number/{number}", urlCredit, number)
+                .uri(urlCredit + "/number/{number}", number)
                 .retrieve()
                 .onStatus(NOT_FOUND::equals, response -> Mono.error(new CustomNotFoundException("Credit " + number + " not found")))
                 .bodyToMono(Credit.class);
@@ -32,7 +32,7 @@ public class CreditServiceImpl implements CreditService {
     @Override
     public void updateCredit(String id, BigDecimal amount) {
         webClient.put()
-                .uri("{url}/balance/{id}/amount/{amount}", urlCredit, id, amount)
+                .uri(urlCredit + "/balance/{id}/amount/{amount}", id, amount)
                 .retrieve()
                 .bodyToMono(Void.class)
                 .subscribe();

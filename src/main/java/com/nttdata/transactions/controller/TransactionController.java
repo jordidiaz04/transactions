@@ -43,10 +43,11 @@ public class TransactionController {
                     transaction.setType(DEPOSIT);
                     transaction.setDate(LocalDateTime.now());
                     transaction.setAmount(amount);
-                    transactionService.create(transaction);
 
-                    accountService.updateAccount(transaction.getIdProduct().toString(), amount);
-                    return Mono.just("Successful transaction");
+                    return transactionService.create(transaction).flatMap(transact -> {
+                        accountService.updateAccount(transaction.getIdProduct().toString(), amount);
+                        return Mono.just("Successful transaction");
+                    });
                 });
     }
 
@@ -64,10 +65,10 @@ public class TransactionController {
                     transaction.setType(WITHDRAWALS);
                     transaction.setDate(LocalDateTime.now());
                     transaction.setAmount(finalAmount);
-                    transactionService.create(transaction);
-                    accountService.updateAccount(transaction.getIdProduct().toString(), finalAmount);
-
-                    return Mono.just("Successful transaction");
+                    return transactionService.create(transaction).flatMap(transact -> {
+                        accountService.updateAccount(transaction.getIdProduct().toString(), finalAmount);
+                        return Mono.just("Successful transaction");
+                    });
                 });
     }
 

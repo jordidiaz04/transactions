@@ -28,5 +28,5 @@ eureka:
 
 backend:
   service:
-    account: http://localhost:8081
-    credit: http://localhost:8082
+    account: 'http://account'
+    credit: 'http://credit'
