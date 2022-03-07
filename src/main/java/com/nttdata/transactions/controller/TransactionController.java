@@ -1,17 +1,19 @@
 package com.nttdata.transactions.controller;
 
 import com.nttdata.transactions.model.Transaction;
+import com.nttdata.transactions.service.AccountService;
 import com.nttdata.transactions.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import static com.nttdata.transactions.utilities.Constants.TransactionType.*;
+import static com.nttdata.transactions.utilities.Constants.TransactionCollection.*;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
 
@@ -19,7 +21,7 @@ import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
 @RequiredArgsConstructor
 public class TransactionController {
     private final TransactionService transactionService;
-    private final WebClient webClient;
+    private final AccountService accountService;
 
     @GetMapping(value = "/get/{idProduct}/{collection}", produces = TEXT_EVENT_STREAM_VALUE)
     public Flux<Transaction> findByIdProductAndCollection(@PathVariable String idProduct,
@@ -27,65 +29,77 @@ public class TransactionController {
         return transactionService.findByIdProductAndCollection(idProduct, collection);
     }
 
-    @PostMapping("/create/{idProduct}/{collection}")
+    @PostMapping("/deposit/account/{number}")
     @ResponseStatus(CREATED)
-    public Mono<Transaction> create(@PathVariable String idProduct,
-                                    @PathVariable int collection,
-                                    BigDecimal amount) {
-        Transaction transaction = new Transaction();
-        transaction.setIdProduct(new ObjectId(idProduct));
-        transaction.setCollection(collection);
-        transaction.setType(amount.compareTo(BigDecimal.valueOf(0)) > 0 ? 1 : 2);
-        transaction.setDate(LocalDateTime.now());
-        transaction.setAmount(amount);
-        Mono<Transaction> response = transactionService.create(transaction);
+    public Mono<String> depositAccount(@PathVariable String number,
+                                       BigDecimal amount) {
+        return accountService.findAccount(number)
+                .flatMap(account -> {
+                    Transaction transaction = new Transaction();
+                    transaction.setIdProduct(new ObjectId(account.getId()));
+                    transaction.setCollection(ACCOUNT);
+                    transaction.setType(DEPOSIT);
+                    transaction.setDate(LocalDateTime.now());
+                    transaction.setAmount(amount);
+                    transactionService.create(transaction);
 
-        String path = collection == 1 ? "http://localhost:8081" : "http://localhost:8099/credits";
-        String url = path + "/balance/{id}/amount/{amount}";
-        webClient.put()
-                .uri(url, idProduct, amount)
-                .retrieve()
-                .bodyToMono(Void.class)
-                .subscribe();
-
-        return response;
+                    accountService.updateAccount(transaction.getIdProduct().toString(), amount);
+                    return Mono.just("Successful transaction");
+                });
     }
 
-    @PostMapping("/transfer/{idProduct1}/to/{idProduct2}")
+    @PostMapping("/withdrawals/account/{number}")
     @ResponseStatus(CREATED)
-    public Mono<String> transferBetweenAccounts(@PathVariable String idProduct1,
-                                                @PathVariable String idProduct2,
+    public Mono<String> withdrawalsAccount(@PathVariable String number,
+                                           BigDecimal amount) {
+        BigDecimal finalAmount = amount.multiply(BigDecimal.valueOf(-1));
+
+        return accountService.findAccount(number)
+                .flatMap(account -> {
+                    Transaction transaction = new Transaction();
+                    transaction.setIdProduct(new ObjectId(account.getId()));
+                    transaction.setCollection(ACCOUNT);
+                    transaction.setType(WITHDRAWALS);
+                    transaction.setDate(LocalDateTime.now());
+                    transaction.setAmount(finalAmount);
+                    transactionService.create(transaction);
+                    accountService.updateAccount(transaction.getIdProduct().toString(), finalAmount);
+
+                    return Mono.just("Successful transaction");
+                });
+    }
+
+    @PostMapping("/transfer/account/{exitNumber}/to/{entryNumber}")
+    @ResponseStatus(CREATED)
+    public Mono<String> transferBetweenAccounts(@PathVariable String exitNumber,
+                                                @PathVariable String entryNumber,
                                                 BigDecimal amount) {
-        int type = amount.compareTo(BigDecimal.valueOf(0)) > 0 ? 1 : 2;
+        BigDecimal exitAmount = amount.multiply(BigDecimal.valueOf(-1));
 
-        Transaction exitTransaction = new Transaction();
-        exitTransaction.setIdProduct(new ObjectId(idProduct1));
-        exitTransaction.setCollection(1);
-        exitTransaction.setType(type);
-        exitTransaction.setDate(LocalDateTime.now());
-        exitTransaction.setAmount(amount);
-        transactionService.create(exitTransaction);
+        return accountService.findAccount(exitNumber)
+                .flatMap(a -> accountService.findAccount(entryNumber).flatMap(b -> {
+                    Transaction exit = new Transaction();
+                    exit.setIdProduct(new ObjectId(a.getId()));
+                    exit.setCollection(ACCOUNT);
+                    exit.setType(TRANSFERS);
+                    exit.setDate(LocalDateTime.now());
+                    exit.setAmount(exitAmount);
 
-        Transaction entryTransaction = new Transaction();
-        entryTransaction.setIdProduct(new ObjectId(idProduct2));
-        entryTransaction.setCollection(1);
-        entryTransaction.setType(type);
-        entryTransaction.setDate(LocalDateTime.now());
-        entryTransaction.setAmount(amount);
-        transactionService.create(entryTransaction);
+                    return transactionService.create(exit).flatMap(exitT -> {
+                        Transaction entry = new Transaction();
+                        entry.setIdProduct(new ObjectId(b.getId()));
+                        entry.setCollection(ACCOUNT);
+                        entry.setType(TRANSFERS);
+                        entry.setDate(LocalDateTime.now());
+                        entry.setAmount(amount);
 
-        String url = "http://localhost:8081/balance/{id}/amount/{amount}";
-        webClient.put()
-                .uri(url, idProduct1, amount)
-                .retrieve()
-                .bodyToMono(Void.class)
-                .subscribe();
-        webClient.put()
-                .uri(url, idProduct2, amount)
-                .retrieve()
-                .bodyToMono(Void.class)
-                .subscribe();
+                        return transactionService.create(entry).flatMap(entryT -> {
+                            accountService.updateAccount(exit.getIdProduct().toString(), exitAmount);
+                            accountService.updateAccount(entry.getIdProduct().toString(), amount);
 
-        return Mono.just("Successful transfer");
+                            return Mono.just("Successful transaction");
+                        });
+                    });
+                }));
     }
 }
