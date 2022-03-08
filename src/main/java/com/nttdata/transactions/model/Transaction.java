@@ -14,6 +14,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.mapping.FieldType;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Document("transactions")
@@ -31,6 +32,19 @@ public class Transaction {
     private int type;
     @JsonFormat(pattern = "dd/MM/yyyy")
     private LocalDateTime date;
+    private int month;
     @Field(targetType = FieldType.DECIMAL128)
     private BigDecimal amount;
+    @Field(targetType = FieldType.DECIMAL128)
+    private BigDecimal tax;
+
+    public Transaction(String idProduct, int collection, int type, BigDecimal amount, BigDecimal tax) {
+        this.idProduct = new ObjectId(idProduct);
+        this.collection = collection;
+        this.type = type;
+        this.date = LocalDateTime.now();
+        this.month = LocalDate.now().getMonthValue();
+        this.amount = amount;
+        this.tax = tax;
+    }
 }

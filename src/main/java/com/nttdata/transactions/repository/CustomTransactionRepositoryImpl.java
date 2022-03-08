@@ -7,6 +7,8 @@ import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
+
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 
 @RequiredArgsConstructor
@@ -16,7 +18,8 @@ public class CustomTransactionRepositoryImpl implements CustomTransactionReposit
     @Override
     public Mono<Long> countByIdProductAndCollection(String idProduct, Integer collection) {
         Query query = new Query(where("idProduct").is(new ObjectId(idProduct))
-                .and("collection").is(collection));
+                .and("collection").is(collection)
+                .and("month").is(LocalDate.now().getMonthValue()));
         return mongoTemplate.count(query, Transaction.class);
     }
 }

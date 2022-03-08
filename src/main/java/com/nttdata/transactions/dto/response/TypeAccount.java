@@ -16,5 +16,6 @@ public class TypeAccount {
     private Integer maxTransactions;
     @Field(targetType = FieldType.DECIMAL128)
     private BigDecimal maintenanceFee;
-    private int day;
+    private BigDecimal tax;
+    private Integer day;
 }

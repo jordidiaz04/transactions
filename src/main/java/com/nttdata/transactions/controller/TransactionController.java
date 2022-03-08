@@ -35,17 +35,15 @@ public class TransactionController {
     @ResponseStatus(CREATED)
     public Mono<String> withdrawalsAccount(@PathVariable String number,
                                            BigDecimal amount) {
-        BigDecimal finalAmount = amount.multiply(BigDecimal.valueOf(-1));
-        return transactionService.withdrawalsAccount(number, finalAmount);
+        return transactionService.withdrawalsAccount(number, amount);
     }
 
-    @PostMapping("/transfer/account/{exitNumber}/to/{entryNumber}")
+    @PostMapping("/transfer/{exitNumber}/to/{entryNumber}")
     @ResponseStatus(CREATED)
     public Mono<String> transferBetweenAccounts(@PathVariable String exitNumber,
                                                 @PathVariable String entryNumber,
                                                 BigDecimal amount) {
-        BigDecimal exitAmount = amount.multiply(BigDecimal.valueOf(-1));
-        return transactionService.transferBetweenAccounts(exitNumber, exitAmount, entryNumber, amount);
+        return transactionService.transferBetweenAccounts(exitNumber, entryNumber, amount);
     }
 
     @PostMapping("/pay/credit/{number}")
