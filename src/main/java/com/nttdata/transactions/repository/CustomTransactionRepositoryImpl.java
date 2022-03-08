@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
@@ -21,5 +22,13 @@ public class CustomTransactionRepositoryImpl implements CustomTransactionReposit
                 .and("collection").is(collection)
                 .and("month").is(LocalDate.now().getMonthValue()));
         return mongoTemplate.count(query, Transaction.class);
+    }
+
+    @Override
+    public Flux<Transaction> listWithTaxByIdProductAndCollection(LocalDate start, LocalDate end, String idProduct, int collection) {
+        Query query = new Query(where("idProduct").is(new ObjectId(idProduct))
+                .and("collection").is(collection)
+                .and("date").gte(start).lt(end.plusDays(1)));
+        return mongoTemplate.find(query, Transaction.class);
     }
 }

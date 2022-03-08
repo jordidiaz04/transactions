@@ -3,6 +3,7 @@ package com.nttdata.transactions.service;
 import com.nttdata.transactions.dto.response.Account;
 import com.nttdata.transactions.exceptions.customs.CustomInformationException;
 import com.nttdata.transactions.model.Transaction;
+import com.nttdata.transactions.model.request.FilterRequest;
 import com.nttdata.transactions.repository.TransactionRepository;
 
 import java.math.BigDecimal;
@@ -33,8 +34,29 @@ public class TransactionServiceImpl implements TransactionService {
     private final CreditService creditService;
 
     @Override
-    public Flux<Transaction> findByIdProductAndCollection(String idProduct, int collection) {
-        return transactionRepository.findByIdProductAndCollection(new ObjectId(idProduct), collection);
+    public Flux<Transaction> listByAccountNumber(String accountNumber) {
+        return accountService.findAccount(accountNumber)
+                .flatMapMany(account -> transactionRepository.findByIdProductAndCollection(new ObjectId(account.getId()), ACCOUNT));
+    }
+
+    @Override
+    public Flux<Transaction> listByCreditNumber(String creditNumber) {
+        return accountService.findAccount(creditNumber)
+                .flatMapMany(account -> transactionRepository.findByIdProductAndCollection(new ObjectId(account.getId()), CREDIT));
+    }
+
+    @Override
+    public Flux<Transaction> listAccountTransactionsWithTax(String accountNumber, FilterRequest request) {
+        return accountService.findAccount(accountNumber)
+                .flatMapMany(account -> transactionRepository
+                        .listWithTaxByIdProductAndCollection(request.getStart(), request.getEnd(), account.getId(), ACCOUNT));
+    }
+
+    @Override
+    public Flux<Transaction> listCreditTransactionsWithTax(String accountNumber, FilterRequest request) {
+        return accountService.findAccount(accountNumber)
+                .flatMapMany(account -> transactionRepository
+                        .listWithTaxByIdProductAndCollection(request.getStart(), request.getEnd(), account.getId(), CREDIT));
     }
 
     @Override
@@ -56,8 +78,8 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Mono<String> withdrawalsAccount(String number, BigDecimal amount) {
-        return accountService.findAccount(number)
+    public Mono<String> withdrawalsAccount(String accountNumber, BigDecimal amount) {
+        return accountService.findAccount(accountNumber)
                 .flatMap(account -> transactionRepository.countByIdProductAndCollection(account.getId(), ACCOUNT)
                         .flatMap(count -> {
                             if (account.getBalance().compareTo(BigDecimal.valueOf(0)) == 0) {
@@ -113,8 +135,8 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Mono<String> payCredit(String number, BigDecimal amount) {
-        return creditService.findCredit(number)
+    public Mono<String> payCredit(String creditNumber, BigDecimal amount) {
+        return creditService.findCredit(creditNumber)
                 .flatMap(account -> {
                     Transaction transaction = new Transaction();
                     transaction.setIdProduct(new ObjectId(account.getId()));
@@ -130,8 +152,8 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Mono<String> spendCredit(String number, BigDecimal amount) {
-        return creditService.findCredit(number)
+    public Mono<String> spendCredit(String creditNumber, BigDecimal amount) {
+        return creditService.findCredit(creditNumber)
                 .flatMap(account -> {
                     Transaction transaction = new Transaction();
                     transaction.setIdProduct(new ObjectId(account.getId()));
