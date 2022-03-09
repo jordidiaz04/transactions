@@ -1,6 +1,6 @@
 package com.nttdata.transactions.controller;
 
-import com.nttdata.transactions.model.request.FilterRequest;
+import com.nttdata.transactions.dto.request.FilterRequest;
 import com.nttdata.transactions.model.Transaction;
 import com.nttdata.transactions.service.TransactionService;
 import lombok.RequiredArgsConstructor;

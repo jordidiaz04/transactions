@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static com.nttdata.transactions.utilities.Constants.AccountType.FIXED_TERM;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.*;
 
 @Service
 public class AccountServiceImpl implements AccountService {

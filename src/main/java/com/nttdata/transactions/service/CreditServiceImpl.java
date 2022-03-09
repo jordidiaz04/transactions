@@ -2,7 +2,8 @@ package com.nttdata.transactions.service;
 
 import com.nttdata.transactions.dto.response.Credit;
 import com.nttdata.transactions.exceptions.customs.CustomNotFoundException;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -13,16 +14,19 @@ import java.math.BigDecimal;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
-@RequiredArgsConstructor
 public class CreditServiceImpl implements CreditService {
     @Value("${backend.service.credit}")
     private String urlCredit;
 
-    private final WebClient webClient;
+    @Autowired
+    @Qualifier("wcLoadBalanced")
+    private WebClient.Builder webClient;
 
     @Override
     public Mono<Credit> findCredit(String number) {
-        return webClient.get()
+        return webClient
+                .build()
+                .get()
                 .uri(urlCredit + "/number/{number}", number)
                 .retrieve()
                 .onStatus(NOT_FOUND::equals, response -> Mono.error(new CustomNotFoundException("Credit " + number + " not found")))
@@ -31,7 +35,9 @@ public class CreditServiceImpl implements CreditService {
 
     @Override
     public void updateCredit(String id, BigDecimal amount) {
-        webClient.put()
+        webClient
+                .build()
+                .put()
                 .uri(urlCredit + "/balance/{id}/amount/{amount}", id, amount)
                 .retrieve()
                 .bodyToMono(Void.class)

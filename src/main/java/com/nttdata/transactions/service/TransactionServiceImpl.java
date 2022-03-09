@@ -3,7 +3,7 @@ package com.nttdata.transactions.service;
 import com.nttdata.transactions.dto.response.Account;
 import com.nttdata.transactions.exceptions.customs.CustomInformationException;
 import com.nttdata.transactions.model.Transaction;
-import com.nttdata.transactions.model.request.FilterRequest;
+import com.nttdata.transactions.dto.request.FilterRequest;
 import com.nttdata.transactions.repository.TransactionRepository;
 
 import java.math.BigDecimal;
@@ -41,7 +41,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public Flux<Transaction> listByCreditNumber(String creditNumber) {
-        return accountService.findAccount(creditNumber)
+        return creditService.findCredit(creditNumber)
                 .flatMapMany(account -> transactionRepository.findByIdProductAndCollection(new ObjectId(account.getId()), CREDIT));
     }
 
@@ -53,8 +53,8 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Flux<Transaction> listCreditTransactionsWithTax(String accountNumber, FilterRequest request) {
-        return accountService.findAccount(accountNumber)
+    public Flux<Transaction> listCreditTransactionsWithTax(String creditNumber, FilterRequest request) {
+        return creditService.findCredit(creditNumber)
                 .flatMapMany(account -> transactionRepository
                         .listWithTaxByIdProductAndCollection(request.getStart(), request.getEnd(), account.getId(), CREDIT));
     }

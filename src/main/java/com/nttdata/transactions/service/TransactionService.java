@@ -1,7 +1,7 @@
 package com.nttdata.transactions.service;
 
 import com.nttdata.transactions.model.Transaction;
-import com.nttdata.transactions.model.request.FilterRequest;
+import com.nttdata.transactions.dto.request.FilterRequest;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

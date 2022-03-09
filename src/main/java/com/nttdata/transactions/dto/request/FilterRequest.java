@@ -1,4 +1,4 @@
-package com.nttdata.transactions.model.request;
+package com.nttdata.transactions.dto.request;
 
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
