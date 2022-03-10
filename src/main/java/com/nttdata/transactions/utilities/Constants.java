@@ -1,23 +1,39 @@
 package com.nttdata.transactions.utilities;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
+/**
+ * Constants.
+ */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Constants {
-    public static final class TransactionType
-    {
-        public static int DEPOSIT = 1;
-        public static int WITHDRAWALS = 2;
-        public static int TRANSFERS = 3;
-    }
+  /**
+   * Transaction types.
+   */
+  @NoArgsConstructor(access = AccessLevel.PRIVATE)
+  public static final class TransactionType {
+    public static final int DEPOSIT = 1;
+    public static final int WITHDRAWALS = 2;
+    public static final int TRANSFERS = 3;
+  }
 
-    public static final class TransactionCollection
-    {
-        public static int ACCOUNT = 1;
-        public static int CREDIT = 2;
-    }
+  /**
+   * Transaction collections.
+   */
+  @NoArgsConstructor(access = AccessLevel.PRIVATE)
+  public static final class TransactionCollection {
+    public static final int ACCOUNT = 1;
+    public static final int CREDIT = 2;
+  }
 
-    public static final class AccountType
-    {
-        public static int SAVING = 1;
-        public static int CHECKING = 2;
-        public static int FIXED_TERM = 3;
-    }
+  /**
+   * Account types.
+   */
+  @NoArgsConstructor(access = AccessLevel.PRIVATE)
+  public static final class AccountType {
+    public static final int SAVING = 1;
+    public static final int CHECKING = 2;
+    public static final int FIXED_TERM = 3;
+  }
 }

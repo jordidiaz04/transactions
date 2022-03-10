@@ -1,11 +1,14 @@
 package com.nttdata.transactions.service;
 
-import com.nttdata.transactions.dto.response.Credit;
+import com.nttdata.transactions.dto.response.CreditResponse;
+import java.math.BigDecimal;
 import reactor.core.publisher.Mono;
 
-import java.math.BigDecimal;
-
+/**
+ * Credit service interface.
+ */
 public interface CreditService {
-    Mono<Credit> findCredit(String number);
-    void updateCredit(String id, BigDecimal amount);
+  Mono<CreditResponse> findCredit(String number);
+
+  void updateCredit(String id, BigDecimal amount);
 }
