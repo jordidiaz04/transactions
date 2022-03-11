@@ -21,4 +21,4 @@ management:
 backend:
   service:
     account: 'http://account-service/accounts'
-    credit: 'http://credit-service/credits'
+    credit: 'http://credits/credits'
