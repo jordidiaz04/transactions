@@ -69,24 +69,30 @@ public class TransactionServiceImpl implements TransactionService {
   @Override
   public Mono<String> depositAccount(String accountNumber, BigDecimal amount) {
     return accountService.findAccount(accountNumber)
-        .flatMap(account -> transactionRepository
-            .countByIdProductAndCollection(account.getId(), ACCOUNT)
-            .flatMap(count -> {
-              BigDecimal tax = requireTax(count, account);
-              Transaction transaction = new Transaction(account.getId(), ACCOUNT,
-                  DEPOSIT, amount, tax);
+        .flatMap(account -> {
+          logger.info("Account: {}", account);
 
-              return create(transaction).flatMap(transact -> {
-                accountService.updateAccount(transaction.getIdProduct().toString(), amount);
-                if (tax != null && tax.compareTo(BigDecimal.valueOf(0)) > 0) {
-                  accountService
-                      .updateAccount(transaction.getIdProduct().toString(),
-                          tax.multiply(BigDecimal.valueOf(-1)));
-                }
+          return transactionRepository
+              .countByIdProductAndCollection(account.getId(), ACCOUNT)
+              .flatMap(count -> {
+                logger.info("Number of transactions: {}", count);
 
-                return Mono.just(SUCCESS_MESSAGE);
+                BigDecimal tax = requireTax(count, account);
+                Transaction transaction = new Transaction(account.getId(), ACCOUNT,
+                    DEPOSIT, amount, tax);
+
+                return create(transaction).flatMap(transact -> {
+                  accountService.updateAccount(transaction.getIdProduct().toString(), amount);
+                  if (tax != null && tax.compareTo(BigDecimal.valueOf(0)) > 0) {
+                    accountService
+                        .updateAccount(transaction.getIdProduct().toString(),
+                            tax.multiply(BigDecimal.valueOf(-1)));
+                  }
+
+                  return Mono.just(SUCCESS_MESSAGE);
+                });
               });
-            }));
+        });
   }
 
   @Override
