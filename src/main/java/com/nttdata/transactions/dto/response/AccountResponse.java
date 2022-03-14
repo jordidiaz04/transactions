@@ -16,11 +16,12 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AccountResponse {
   private String id;
+  private String debitCard;
   private String number;
   private ClientResponse client;
   private TypeAccountResponse typeAccount;
   private List<String> holders;
   private List<String> signatories;
-  private BigDecimal balance = BigDecimal.valueOf(0);
+  private BigDecimal balance;
   private boolean status;
 }

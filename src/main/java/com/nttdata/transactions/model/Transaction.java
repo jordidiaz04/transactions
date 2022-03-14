@@ -28,9 +28,10 @@ public class Transaction {
   @Id
   @JsonSerialize(using = ToStringSerializer.class)
   private ObjectId id;
+  private int collection;
   @JsonSerialize(using = ToStringSerializer.class)
   private ObjectId idProduct;
-  private int collection;
+  private String description;
   private int type;
   @JsonFormat(pattern = "dd/MM/yyyy")
   private LocalDateTime date;
@@ -43,16 +44,19 @@ public class Transaction {
   /**
    * Return transaction.
    *
+   * @param collection Account or credit collection - use TransactionCollection constant
    * @param idProduct  Id of account or credit
-   * @param collection Account or credit collection - use TransactionCollection constan
+   * @param description Description of the transaction
    * @param type       Type of transaction - use TransactionType constant
    * @param amount     Transaction amount
    * @param fee        Transaction fee
    */
-  public Transaction(String idProduct, int collection, int type,
+  public Transaction(int collection, String idProduct,
+                     String description, int type,
                      BigDecimal amount, BigDecimal fee) {
-    this.idProduct = new ObjectId(idProduct);
     this.collection = collection;
+    this.idProduct = new ObjectId(idProduct);
+    this.description = description;
     this.type = type;
     this.date = LocalDateTime.now();
     this.month = LocalDate.now().getMonthValue();

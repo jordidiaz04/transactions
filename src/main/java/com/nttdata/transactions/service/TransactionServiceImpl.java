@@ -2,17 +2,17 @@ package com.nttdata.transactions.service;
 
 import static com.nttdata.transactions.utilities.Constants.TransactionCollection.ACCOUNT;
 import static com.nttdata.transactions.utilities.Constants.TransactionCollection.CREDIT;
-import static com.nttdata.transactions.utilities.Constants.TransactionType.DEPOSIT;
-import static com.nttdata.transactions.utilities.Constants.TransactionType.TRANSFERS;
-import static com.nttdata.transactions.utilities.Constants.TransactionType.WITHDRAWALS;
+import static com.nttdata.transactions.utilities.Constants.TransactionType.ENTRY;
+import static com.nttdata.transactions.utilities.Constants.TransactionType.EXIT;
 
 import com.nttdata.transactions.dto.request.FilterRequest;
+import com.nttdata.transactions.dto.request.TransactionRequest;
 import com.nttdata.transactions.dto.response.AccountResponse;
 import com.nttdata.transactions.exceptions.customs.CustomInformationException;
+import com.nttdata.transactions.exceptions.customs.CustomNotFoundException;
 import com.nttdata.transactions.model.Transaction;
 import com.nttdata.transactions.repository.TransactionRepository;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,6 +29,7 @@ import reactor.core.publisher.Mono;
 public class TransactionServiceImpl implements TransactionService {
   private static final Logger logger = LogManager.getLogger(TransactionServiceImpl.class);
   private static final String SUCCESS_MESSAGE = "Successful transaction";
+  private static final String ACCOUNT_NOT_FOUND_MESSAGE = "Account not found";
 
   private final TransactionRepository transactionRepository;
   private final AccountService accountService;
@@ -67,67 +68,64 @@ public class TransactionServiceImpl implements TransactionService {
   }
 
   @Override
-  public Mono<String> depositAccount(String accountNumber, BigDecimal amount) {
-    return accountService.findAccount(accountNumber)
-        .flatMap(account -> {
-          logger.info("Account: {}", account);
-
-          return transactionRepository
-              .countByIdProductAndCollection(account.getId(), ACCOUNT)
-              .flatMap(count -> {
-                logger.info("Number of transactions: {}", count);
-
-                BigDecimal tax = requireTax(count, account);
-                Transaction transaction = new Transaction(account.getId(), ACCOUNT,
-                    DEPOSIT, amount, tax);
-
-                return create(transaction).flatMap(transact -> {
-                  accountService.updateAccount(transaction.getIdProduct().toString(), amount);
-                  if (tax != null && tax.compareTo(BigDecimal.valueOf(0)) > 0) {
-                    accountService
-                        .updateAccount(transaction.getIdProduct().toString(),
-                            tax.multiply(BigDecimal.valueOf(-1)));
-                  }
-
-                  return Mono.just(SUCCESS_MESSAGE);
-                });
-              });
-        });
-  }
-
-  @Override
-  public Mono<String> withdrawalsAccount(String accountNumber, BigDecimal amount) {
+  public Mono<String> depositAccount(String accountNumber, TransactionRequest request) {
     return accountService.findAccount(accountNumber)
         .flatMap(account -> transactionRepository
             .countByIdProductAndCollection(account.getId(), ACCOUNT)
             .flatMap(count -> {
-              if (account.getBalance().compareTo(BigDecimal.valueOf(0)) == 0) {
-                throw new CustomInformationException("You do not have a balance "
-                    + "to carry out this transaction");
-              }
-
-              BigDecimal tax = requireTax(count, account);
-              Transaction transaction = new Transaction(account.getId(), ACCOUNT,
-                  WITHDRAWALS, amount, tax);
+              BigDecimal commission = requireCommission(count, account);
+              Transaction transaction = new Transaction(ACCOUNT, account.getId(),
+                  request.getDescription(), ENTRY, request.getAmount(), commission);
 
               return create(transaction).flatMap(transact -> {
                 accountService.updateAccount(transaction.getIdProduct().toString(),
-                    amount.multiply(BigDecimal.valueOf(-1)));
-                if (tax != null && tax.compareTo(BigDecimal.valueOf(0)) > 0) {
+                    request.getAmount());
+                if (commission != null) {
                   accountService
                       .updateAccount(transaction.getIdProduct().toString(),
-                          tax.multiply(BigDecimal.valueOf(-1)));
+                          commission.multiply(BigDecimal.valueOf(-1)));
                 }
 
                 return Mono.just(SUCCESS_MESSAGE);
               });
-            }));
+            }))
+        .switchIfEmpty(Mono.error(new CustomNotFoundException(ACCOUNT_NOT_FOUND_MESSAGE)));
   }
 
   @Override
+  public Mono<String> withdrawalAccount(String accountNumber, TransactionRequest request) {
+    return accountService.findAccount(accountNumber)
+        .flatMap(account -> transactionRepository
+            .countByIdProductAndCollection(account.getId(), ACCOUNT)
+            .flatMap(count -> {
+              if (account.getBalance().compareTo(request.getAmount()) < 0) {
+                throw new CustomInformationException("You do not have a balance "
+                    + "to carry out this transaction");
+              }
+
+              BigDecimal commission = requireCommission(count, account);
+              Transaction transaction = new Transaction(ACCOUNT, account.getId(),
+                  request.getDescription(), EXIT, request.getAmount(), commission);
+
+              return create(transaction).flatMap(transact -> {
+                accountService.updateAccount(transaction.getIdProduct().toString(),
+                    request.getAmount().multiply(BigDecimal.valueOf(-1)));
+                if (commission != null) {
+                  accountService
+                      .updateAccount(transaction.getIdProduct().toString(),
+                          commission.multiply(BigDecimal.valueOf(-1)));
+                }
+
+                return Mono.just(SUCCESS_MESSAGE);
+              });
+            }))
+        .switchIfEmpty(Mono.error(new CustomNotFoundException(ACCOUNT_NOT_FOUND_MESSAGE)));
+  }
+/*
+  @Override
   public Mono<String> transferBetweenAccounts(String exitNumber,
                                               String entryNumber,
-                                              BigDecimal amount) {
+                                              TransactionRequest request) {
     return accountService.findAccount(exitNumber)
         .flatMap(a -> transactionRepository.countByIdProductAndCollection(a.getId(), ACCOUNT)
             .flatMap(count -> accountService.findAccount(entryNumber)
@@ -198,6 +196,19 @@ public class TransactionServiceImpl implements TransactionService {
           return Mono.just(SUCCESS_MESSAGE);
         });
   }
+*/
+  private BigDecimal requireCommission(Long count, AccountResponse account) {
+    boolean requireCommission = account.getTypeAccount().getMaxTransactions() != null
+        && count >= account.getTypeAccount().getMaxTransactions();
+    if (!requireCommission) {
+      return null;
+    }
+
+    return account.getTypeAccount().getCommission() == null
+        || account.getTypeAccount().getCommission().compareTo(BigDecimal.ZERO) == 0
+        ? null :
+        account.getTypeAccount().getCommission();
+  }
 
   private Mono<Transaction> create(Transaction transaction) {
     return transactionRepository.save(transaction)
@@ -205,17 +216,5 @@ public class TransactionServiceImpl implements TransactionService {
           logger.info("Created a new transaction with id = {}", x.getId());
           return x;
         });
-  }
-
-  private BigDecimal requireTax(Long count, AccountResponse account) {
-    boolean hasTax = account.getTypeAccount().getMaxTransactions() != null
-        && count >= account.getTypeAccount().getMaxTransactions();
-    if (!hasTax) {
-      return null;
-    }
-
-    return account.getTypeAccount().getTax() == null
-        ? BigDecimal.valueOf(0) :
-        account.getTypeAccount().getTax();
   }
 }

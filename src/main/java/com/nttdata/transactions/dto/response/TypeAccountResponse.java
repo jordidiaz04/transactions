@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.mongodb.core.mapping.Field;
-import org.springframework.data.mongodb.core.mapping.FieldType;
 
 /**
  * TypeAccount object.
@@ -17,9 +15,8 @@ import org.springframework.data.mongodb.core.mapping.FieldType;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TypeAccountResponse {
   private int option;
+  private BigDecimal maintenance;
   private Integer maxTransactions;
-  @Field(targetType = FieldType.DECIMAL128)
-  private BigDecimal maintenanceFee;
-  private BigDecimal tax;
+  private BigDecimal commission;
   private Integer day;
 }

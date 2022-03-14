@@ -13,9 +13,8 @@ public class Constants {
    */
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
   public static final class TransactionType {
-    public static final int DEPOSIT = 1;
-    public static final int WITHDRAWALS = 2;
-    public static final int TRANSFERS = 3;
+    public static final int ENTRY = 1;
+    public static final int EXIT = 2;
   }
 
   /**
