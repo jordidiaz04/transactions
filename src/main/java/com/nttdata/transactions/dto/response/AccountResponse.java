@@ -18,6 +18,7 @@ public class AccountResponse {
   private String id;
   private String debitCard;
   private String number;
+  private int position;
   private ClientResponse client;
   private TypeAccountResponse typeAccount;
   private List<String> holders;

@@ -39,21 +39,21 @@ public class Transaction {
   @Field(targetType = FieldType.DECIMAL128)
   private BigDecimal amount;
   @Field(targetType = FieldType.DECIMAL128)
-  private BigDecimal fee;
+  private BigDecimal commission;
 
   /**
    * Return transaction.
    *
-   * @param collection Account or credit collection - use TransactionCollection constant
-   * @param idProduct  Id of account or credit
+   * @param collection  Account or credit collection - use TransactionCollection constant
+   * @param idProduct   Id of account or credit
    * @param description Description of the transaction
-   * @param type       Type of transaction - use TransactionType constant
-   * @param amount     Transaction amount
-   * @param fee        Transaction fee
+   * @param type        Type of transaction - use TransactionType constant
+   * @param amount      Transaction amount
+   * @param commission  Transaction commission
    */
   public Transaction(int collection, String idProduct,
                      String description, int type,
-                     BigDecimal amount, BigDecimal fee) {
+                     BigDecimal amount, BigDecimal commission) {
     this.collection = collection;
     this.idProduct = new ObjectId(idProduct);
     this.description = description;
@@ -61,6 +61,6 @@ public class Transaction {
     this.date = LocalDateTime.now();
     this.month = LocalDate.now().getMonthValue();
     this.amount = amount;
-    this.fee = fee;
+    this.commission = commission;
   }
 }

@@ -22,9 +22,12 @@ public interface TransactionService {
 
   Mono<String> withdrawalAccount(String accountNumber, TransactionRequest request);
 
- /*Mono<String> transferBetweenAccounts(String exitNumber, String entryNumber, TransactionRequest request);
+  Mono<String> withdrawalFromDebitCard(String debitCard, TransactionRequest request);
 
-  Mono<String> payCredit(String creditNumber, BigDecimal amount);
+  Mono<String> transferBetweenAccounts(String exitNumber, String entryNumber,
+                                       TransactionRequest request);
+
+  /*Mono<String> payCredit(String creditNumber, BigDecimal amount);
 
   Mono<String> spendCredit(String creditNumber, BigDecimal amount);*/
 }

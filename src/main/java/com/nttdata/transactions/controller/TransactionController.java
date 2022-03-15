@@ -10,7 +10,13 @@ import com.nttdata.transactions.service.TransactionService;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -33,6 +39,15 @@ public class TransactionController {
     return transactionService.listByCreditNumber(number);
   }
 
+  @GetMapping(value = "/get/account/{number}/commissions", produces = TEXT_EVENT_STREAM_VALUE)
+  public Flux<Transaction> listAccountTransactionsWithTax(@PathVariable String number,
+                                                          @Valid FilterRequest request) {
+    return transactionService.listAccountTransactionsWithTax(number, request);
+  }
+
+  /**
+   * Deposit account.
+   */
   @PostMapping("/deposit/account/{number}")
   @ResponseStatus(CREATED)
   public Mono<String> depositAccount(@PathVariable String number,
@@ -43,6 +58,9 @@ public class TransactionController {
     return transactionService.depositAccount(number, request);
   }
 
+  /**
+   * Withdraw from account.
+   */
   @PostMapping("/withdrawal/account/{number}")
   @ResponseStatus(CREATED)
   public Mono<String> withdrawalAccount(@PathVariable String number,
@@ -53,29 +71,39 @@ public class TransactionController {
     return transactionService.withdrawalAccount(number, request);
   }
 
-
-
-
-
-  @GetMapping(value = "/get/account/{number}/tax", produces = TEXT_EVENT_STREAM_VALUE)
-  public Flux<Transaction> listAccountTransactionsWithTax(@PathVariable String number,
-                                                          @Valid FilterRequest request) {
-    return transactionService.listAccountTransactionsWithTax(number, request);
+  /**
+   * Withdraw from debit card.
+   */
+  @PostMapping("/withdrawal/debitCard/{debitCard}")
+  @ResponseStatus(CREATED)
+  public Mono<String> withdrawalFromDebitCard(@PathVariable String debitCard,
+                                              @Valid @RequestBody TransactionRequest request) {
+    if (StringUtils.isBlank(request.getDescription())) {
+      request.setDescription("Retiro de efectivo");
+    }
+    return transactionService.withdrawalFromDebitCard(debitCard, request);
   }
 
+  /**
+   * Transfer between two accounts.
+   */
+  @PostMapping("/transfer/account/{exitNumber}/account/{entryNumber}")
+  @ResponseStatus(CREATED)
+  public Mono<String> transferBetweenAccounts(@PathVariable String exitNumber,
+                                              @PathVariable String entryNumber,
+                                              @Valid @RequestBody TransactionRequest request) {
+    if (StringUtils.isBlank(request.getDescription())) {
+      request.setDescription("Transferencia entre cuentas");
+    }
+    return transactionService.transferBetweenAccounts(exitNumber, entryNumber, request);
+  }
+
+  /*
 
   @GetMapping(value = "/get/credit/{number}/tax", produces = TEXT_EVENT_STREAM_VALUE)
   public Flux<Transaction> listCreditTransactionsWithTax(@PathVariable String number,
                                                          @Valid FilterRequest request) {
     return transactionService.listCreditTransactionsWithTax(number, request);
-  }
-/*
-  @PostMapping("/transfer/{exitNumber}/to/{entryNumber}")
-  @ResponseStatus(CREATED)
-  public Mono<String> transferBetweenAccounts(@PathVariable String exitNumber,
-                                              @PathVariable String entryNumber,
-                                              @Valid @RequestBody TransactionRequest request) {
-    return transactionService.transferBetweenAccounts(exitNumber, entryNumber, request);
   }
 
   @PostMapping("/pay/credit/{number}")

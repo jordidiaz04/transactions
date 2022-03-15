@@ -1,10 +1,13 @@
 package com.nttdata.transactions.dto.request;
 
-import lombok.Data;
 import java.math.BigDecimal;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import lombok.Data;
 
+/**
+ * Transaction object.
+ */
 @Data
 public class TransactionRequest {
   private String description;

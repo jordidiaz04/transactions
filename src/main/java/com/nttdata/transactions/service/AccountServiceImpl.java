@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -26,6 +27,18 @@ public class AccountServiceImpl implements AccountService {
   @Autowired
   @Qualifier("wcLoadBalanced")
   private WebClient.Builder webClient;
+
+  @Override
+  public Flux<AccountResponse> listByDebitCard(String debitCard) {
+    return webClient
+        .build()
+        .get()
+        .uri(urlAccount + "/get/debitCard/{debitCard}", debitCard)
+        .retrieve()
+        .onStatus(NOT_FOUND::equals, response -> Mono
+            .error(new CustomNotFoundException("Debit card " + debitCard + " not found")))
+        .bodyToFlux(AccountResponse.class);
+  }
 
   @Override
   public Mono<AccountResponse> findAccount(String number) {
