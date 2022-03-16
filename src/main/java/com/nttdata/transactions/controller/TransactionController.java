@@ -10,6 +10,8 @@ import com.nttdata.transactions.service.TransactionService;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import java.math.BigDecimal;
 
 /**
  * RestController for transaction service.
@@ -27,7 +30,21 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 @RequestMapping("/transactions")
 public class TransactionController {
+  private static final Logger logger = LogManager.getLogger(TransactionController.class);
   private final TransactionService transactionService;
+
+  @GetMapping("/test")
+  public Mono<String> test() {
+    return Mono
+        .just("abc")
+        .flatMap(id -> Flux.range(1, 10)
+            .flatMap(nr -> Mono.just(nr).doOnNext(a -> logger.info("Number: {}", a)))
+            .then(Mono.just(id)))
+        .map(id -> {
+          logger.info("ID: {}", id);
+          return id;
+        });
+  }
 
   @GetMapping(value = "/get/account/{number}", produces = TEXT_EVENT_STREAM_VALUE)
   public Flux<Transaction> listByAccountNumber(@PathVariable String number) {
@@ -98,14 +115,6 @@ public class TransactionController {
     return transactionService.transferBetweenAccounts(exitNumber, entryNumber, request);
   }
 
-  /*
-
-  @GetMapping(value = "/get/credit/{number}/tax", produces = TEXT_EVENT_STREAM_VALUE)
-  public Flux<Transaction> listCreditTransactionsWithTax(@PathVariable String number,
-                                                         @Valid FilterRequest request) {
-    return transactionService.listCreditTransactionsWithTax(number, request);
-  }
-
   @PostMapping("/pay/credit/{number}")
   @ResponseStatus(CREATED)
   public Mono<String> payCredit(@PathVariable String number,
@@ -119,6 +128,13 @@ public class TransactionController {
                                   BigDecimal amount) {
     BigDecimal finalAmount = amount.multiply(BigDecimal.valueOf(-1));
     return transactionService.spendCredit(number, finalAmount);
+  }
+
+  /*
+  @GetMapping(value = "/get/credit/{number}/tax", produces = TEXT_EVENT_STREAM_VALUE)
+  public Flux<Transaction> listCreditTransactionsWithTax(@PathVariable String number,
+                                                         @Valid FilterRequest request) {
+    return transactionService.listCreditTransactionsWithTax(number, request);
   }
  */
 }

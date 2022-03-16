@@ -5,6 +5,7 @@ import com.nttdata.transactions.dto.request.TransactionRequest;
 import com.nttdata.transactions.model.Transaction;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import java.math.BigDecimal;
 
 /**
  * Transaction service interface.
@@ -27,7 +28,7 @@ public interface TransactionService {
   Mono<String> transferBetweenAccounts(String exitNumber, String entryNumber,
                                        TransactionRequest request);
 
-  /*Mono<String> payCredit(String creditNumber, BigDecimal amount);
+  Mono<String> payCredit(String creditNumber, BigDecimal amount);
 
-  Mono<String> spendCredit(String creditNumber, BigDecimal amount);*/
+  Mono<String> spendCredit(String creditNumber, BigDecimal amount);
 }

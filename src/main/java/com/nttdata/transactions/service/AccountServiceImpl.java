@@ -1,19 +1,18 @@
 package com.nttdata.transactions.service;
 
 import static com.nttdata.transactions.utilities.Constants.AccountType.FIXED_TERM;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 import com.nttdata.transactions.dto.response.AccountResponse;
 import com.nttdata.transactions.exceptions.customs.CustomInformationException;
 import com.nttdata.transactions.exceptions.customs.CustomNotFoundException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -24,20 +23,23 @@ public class AccountServiceImpl implements AccountService {
   @Value("${backend.service.account}")
   private String urlAccount;
 
+  private static final String NOT_FOUND = " not found";
+
   @Autowired
   @Qualifier("wcLoadBalanced")
   private WebClient.Builder webClient;
 
   @Override
-  public Flux<AccountResponse> listByDebitCard(String debitCard) {
+  public Mono<List<AccountResponse>> listByDebitCard(String debitCard) {
     return webClient
         .build()
         .get()
         .uri(urlAccount + "/get/debitCard/{debitCard}", debitCard)
         .retrieve()
         .onStatus(NOT_FOUND::equals, response -> Mono
-            .error(new CustomNotFoundException("Debit card " + debitCard + " not found")))
-        .bodyToFlux(AccountResponse.class);
+            .error(new CustomNotFoundException("Debit card " + debitCard + NOT_FOUND)))
+        .bodyToFlux(AccountResponse.class)
+        .collectList();
   }
 
   @Override
@@ -48,7 +50,7 @@ public class AccountServiceImpl implements AccountService {
         .uri(urlAccount + "/get/number/{number}", number)
         .retrieve()
         .onStatus(NOT_FOUND::equals, response -> Mono
-            .error(new CustomNotFoundException("Account " + number + " not found")))
+            .error(new CustomNotFoundException("Account " + number + NOT_FOUND)))
         .bodyToMono(AccountResponse.class)
         .map(account -> {
           if (account.getTypeAccount().getOption() == FIXED_TERM) {
@@ -62,6 +64,18 @@ public class AccountServiceImpl implements AccountService {
 
           return account;
         });
+  }
+
+  @Override
+  public Mono<BigDecimal> getTotalBalanceByDebitCard(String debitCard) {
+    return webClient
+        .build()
+        .get()
+        .uri(urlAccount + "/get/totalBalance/{debitCard}", debitCard)
+        .retrieve()
+        .onStatus(NOT_FOUND::equals, response -> Mono
+            .error(new CustomNotFoundException("Debit card " + debitCard + NOT_FOUND)))
+        .bodyToMono(BigDecimal.class);
   }
 
   @Override
