@@ -13,6 +13,7 @@ import com.nttdata.transactions.model.Transaction;
 import com.nttdata.transactions.repository.TransactionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,7 +73,7 @@ public class TransactionServiceImpl implements TransactionService {
               return create(transaction).flatMap(transact -> {
                 updateAccountBalance(transaction, request.getAmount(), ENTRY);
 
-                if (commission != null) {
+                if (commission.compareTo(BigDecimal.ZERO) > 0) {
                   updateAccountBalance(transaction, commission, EXIT);
                 }
 
@@ -99,7 +100,7 @@ public class TransactionServiceImpl implements TransactionService {
               return create(transaction).flatMap(transact -> {
                 updateAccountBalance(transaction, request.getAmount(), EXIT);
 
-                if (commission != null) {
+                if (commission.compareTo(BigDecimal.ZERO) > 0) {
                   updateAccountBalance(transaction, commission, EXIT);
                 }
 
@@ -110,50 +111,52 @@ public class TransactionServiceImpl implements TransactionService {
 
   @Override
   public Mono<String> withdrawalFromDebitCard(String debitCard, TransactionRequest request) {
-    Mono<BigDecimal> monoTotal = accountService.getTotalBalanceByDebitCard(debitCard)
+    Flux<AccountResponse> fluxAccount = accountService.listByDebitCard(debitCard)
+        .flatMap(this::setTotalTransactions);
+
+    return fluxAccount
+        .map(AccountResponse::getAvailableBalance)
+        .reduce(BigDecimal.ZERO, BigDecimal::add)
         .flatMap(total -> {
           if (total.compareTo(request.getAmount()) < 0) {
             return Mono.error(new CustomInformationException("You do not have "
                 + "enough balance in your accounts"));
           }
           return Mono.just(total);
-        });
+        })
+        .flatMapMany(total -> fluxAccount)
+        .sort(Comparator.comparing(AccountResponse::getPosition))
+        .flatMap(account -> {
+          if (request.getAmount().compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal balance = account.getAvailableBalance();
+            BigDecimal commission = getCommission(account.getTotalTransactions(), account);
+            BigDecimal amount;
+            BigDecimal amountTransaction;
 
-    return monoTotal.flatMap(total ->
-        accountService.listByDebitCard(debitCard)
-            .flatMap(this::setTotalTransactions)
-            .map(account -> {
-              if (request.getAmount().compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal balance = account.getBalance();
-                BigDecimal amount;
+            if (balance.subtract(request.getAmount()).compareTo(BigDecimal.ZERO) <= 0) {
+              request.setAmount(request.getAmount().subtract(balance));
+              amount = account.getBalance();
+              amountTransaction = account.getAvailableBalance();
+            } else {
+              amount = request.getAmount().add(commission);
+              amountTransaction = request.getAmount();
+              request.setAmount(BigDecimal.ZERO);
+            }
 
-                if (balance.subtract(request.getAmount()).compareTo(BigDecimal.ZERO) <= 0) {
-                  account.setBalance(BigDecimal.ZERO);
-                  request.setAmount(request.getAmount().subtract(balance));
-                  amount = balance;
-                } else {
-                  amount = request.getAmount();
-                  account.setBalance(balance.subtract(request.getAmount()));
-                  request.setAmount(BigDecimal.ZERO);
-                }
+            Transaction transaction = new Transaction(ACCOUNT, account.getId(),
+                request.getDescription(), EXIT, amountTransaction, commission);
 
-                Transaction transaction = new Transaction(ACCOUNT, account.getId(),
-                    request.getDescription(), EXIT, amount, null);
-                BigDecimal finalAmount = amount;
+            return create(transaction)
+                .map(transact -> {
+                  updateAccountBalance(transaction, amount, EXIT);
 
-                create(transaction)
-                    .doOnNext(transact -> accountService
-                        .updateAccount(transaction.getIdProduct().toString(),
-                            finalAmount.multiply(BigDecimal.valueOf(-1))))
-                    .subscribe();
-              }
-              logger.info("El saldo de la cuenta {} es {}",
-                  account.getNumber(), account.getBalance());
-
-              return account;
-            })
-            .then(Mono.just(SUCCESS_MESSAGE))
-    );
+                  return account;
+                });
+          } else {
+            return Mono.just(account);
+          }
+        })
+        .then(Mono.just(SUCCESS_MESSAGE));
   }
 
   @Override
@@ -190,7 +193,7 @@ public class TransactionServiceImpl implements TransactionService {
                     .doOnNext(t -> {
                       updateAccountBalance(exit, request.getAmount(), EXIT);
 
-                      if (commission != null) {
+                      if (commission.compareTo(BigDecimal.ZERO) > 0) {
                         updateAccountBalance(exit, commission, EXIT);
                       }
                     })
@@ -243,12 +246,11 @@ public class TransactionServiceImpl implements TransactionService {
     boolean requireCommission = account.getTypeAccount().getMaxTransactions() != null
         && count >= account.getTypeAccount().getMaxTransactions();
     if (!requireCommission) {
-      return null;
+      return BigDecimal.ZERO;
     }
 
     return account.getTypeAccount().getCommission() == null
-        || account.getTypeAccount().getCommission().compareTo(BigDecimal.ZERO) == 0
-        ? null :
+        ? BigDecimal.ZERO :
         account.getTypeAccount().getCommission();
   }
 
@@ -256,16 +258,24 @@ public class TransactionServiceImpl implements TransactionService {
     return transactionRepository
         .countByIdProductAndCollection(account.getId(), ACCOUNT)
         .flatMap(count -> {
+          BigDecimal commission = account.getTypeAccount().getCommission() == null
+              ? BigDecimal.ZERO :
+              account.getTypeAccount().getCommission();
+          BigDecimal availableBalance = count >= account.getTypeAccount().getMaxTransactions()
+              ? account.getBalance().subtract(commission) :
+              account.getBalance();
+          account.setAvailableBalance(availableBalance);
           account.setTotalTransactions(count);
+
           return Mono.just(account);
         });
   }
 
   private Mono<Transaction> create(Transaction transaction) {
     return transactionRepository.save(transaction)
-        .map(x -> {
+        .flatMap(x -> {
           logger.info("Created a new transaction with id = {}", x.getId());
-          return x;
+          return Mono.just(x);
         });
   }
 
