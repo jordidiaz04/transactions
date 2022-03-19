@@ -3,9 +3,9 @@ package com.nttdata.transactions.service;
 import com.nttdata.transactions.dto.request.FilterRequest;
 import com.nttdata.transactions.dto.request.TransactionRequest;
 import com.nttdata.transactions.model.Transaction;
+import java.math.BigDecimal;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import java.math.BigDecimal;
 
 /**
  * Transaction service interface.
@@ -15,9 +15,8 @@ public interface TransactionService {
 
   Flux<Transaction> listByCreditNumber(String creditNumber);
 
-  Flux<Transaction> listAccountTransactionsWithTax(String accountNumber, FilterRequest request);
-
-  Flux<Transaction> listCreditTransactionsWithTax(String accountNumber, FilterRequest request);
+  Flux<Transaction> listAccountTransactionsWithCommission(String accountNumber,
+                                                          FilterRequest request);
 
   Mono<String> depositAccount(String accountNumber, TransactionRequest request);
 

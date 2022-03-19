@@ -33,7 +33,7 @@ public class Transaction {
   private ObjectId idProduct;
   private String description;
   private int type;
-  @JsonFormat(pattern = "dd/MM/yyyy")
+  @JsonFormat(pattern = "dd/MM/yyyy HH:mm:ss")
   private LocalDateTime date;
   private int month;
   @Field(targetType = FieldType.DECIMAL128)

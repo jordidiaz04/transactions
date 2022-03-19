@@ -24,5 +24,6 @@ public class AccountResponse {
   private List<String> holders;
   private List<String> signatories;
   private BigDecimal balance;
+  private Long totalTransactions;
   private boolean status;
 }
