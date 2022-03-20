@@ -524,6 +524,66 @@ class TransactionsServiceTest {
     ObjectId id = new ObjectId();
 
     TypeAccountResponse typeAccount = new TypeAccountResponse(SAVING, null, 5, BigDecimal.ZERO, null);
+    TypeAccountResponse typeAccount1 = new TypeAccountResponse(SAVING, null, 5, null, null);
+    TypeAccountResponse typeAccount2 = new TypeAccountResponse(SAVING, null, 1, BigDecimal.valueOf(2), null);
+
+    AccountResponse account = new AccountResponse();
+    account.setId(id.toString());
+    account.setPosition(1);
+    account.setNumber("1234567890");
+    account.setDebitCard("4420652012504888");
+    account.setTypeAccount(typeAccount);
+    account.setBalance(BigDecimal.valueOf(100));
+
+    AccountResponse account1 = new AccountResponse();
+    account1.setId(id.toString());
+    account1.setPosition(1);
+    account1.setNumber("1234567891");
+    account1.setDebitCard("4420652012504888");
+    account1.setTypeAccount(typeAccount1);
+    account1.setBalance(BigDecimal.valueOf(200));
+
+    AccountResponse account2 = new AccountResponse();
+    account2.setId(id.toString());
+    account2.setPosition(1);
+    account2.setNumber("1234567892");
+    account2.setDebitCard("4420652012504888");
+    account2.setTypeAccount(typeAccount2);
+    account2.setBalance(BigDecimal.valueOf(100));
+
+    Transaction transaction = new Transaction();
+    transaction.setIdProduct(id);
+    transaction.setCollection(ACCOUNT);
+    transaction.setType(EXIT);
+    transaction.setAmount(BigDecimal.valueOf(200));
+
+    TransactionRequest request = new TransactionRequest();
+    request.setAmount(BigDecimal.valueOf(200));
+
+    var fluxAccounts = Flux.just(account, account1, account2);
+    var monoCount = Mono.just(5L);
+    var monoTransaction = Mono.just(transaction);
+    when(accountService.listByDebitCard("4420652012504888")).thenReturn(fluxAccounts);
+    when(transactionRepository.countByIdProductAndCollection(account.getId(), ACCOUNT)).thenReturn(monoCount);
+    when(transactionRepository.save(any())).thenReturn(monoTransaction);
+    doNothing().when(accountService).updateAccount(id.toString(), BigDecimal.valueOf(200));
+
+    var result = transactionService.withdrawalFromDebitCard("4420652012504888", request);
+    StepVerifier
+        .create(result)
+        .expectSubscription()
+        .consumeNextWith(x -> {
+          Assertions.assertNotNull(x);
+          Assertions.assertEquals(SUCCESS_MESSAGE, x);
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  void testWithdrawalWithDebitCardNotEnoughBalance() {
+    ObjectId id = new ObjectId();
+
+    TypeAccountResponse typeAccount = new TypeAccountResponse(SAVING, null, 5, BigDecimal.ZERO, null);
 
     AccountResponse account = new AccountResponse();
     account.setId(id.toString());
@@ -553,28 +613,22 @@ class TransactionsServiceTest {
     transaction.setIdProduct(id);
     transaction.setCollection(ACCOUNT);
     transaction.setType(EXIT);
-    transaction.setAmount(BigDecimal.valueOf(200));
+    transaction.setAmount(BigDecimal.valueOf(500));
 
     TransactionRequest request = new TransactionRequest();
-    request.setAmount(BigDecimal.valueOf(200));
+    request.setAmount(BigDecimal.valueOf(500));
 
     var fluxAccounts = Flux.just(account, account1, account2);
     var monoCount = Mono.just(0L);
-    var monoTransaction = Mono.just(transaction);
     when(accountService.listByDebitCard("4420652012504888")).thenReturn(fluxAccounts);
     when(transactionRepository.countByIdProductAndCollection(account.getId(), ACCOUNT)).thenReturn(monoCount);
-    when(transactionRepository.save(any())).thenReturn(monoTransaction);
-    doNothing().when(accountService).updateAccount(id.toString(), BigDecimal.valueOf(200));
 
     var result = transactionService.withdrawalFromDebitCard("4420652012504888", request);
     StepVerifier
         .create(result)
-        .expectSubscription()
-        .consumeNextWith(x -> {
-          Assertions.assertNotNull(x);
-          Assertions.assertEquals(SUCCESS_MESSAGE, x);
-        })
-        .verifyComplete();
+        .expectErrorMatches(throwable -> throwable instanceof CustomInformationException &&
+            throwable.getMessage().equals("You do not have enough balance in your accounts"))
+        .verify();
   }
 
   @Test
