@@ -1,0 +1,11 @@
+spring:
+  config:
+    import: optional:configserver:https://bootcamp-configserver.azurewebsites.net
+  cloud:
+    config:
+      profile: prod
+
+eureka:
+  client:
+    service-url:
+      defaultZone: https://bootcamp-eurekaserver.azurewebsites.net/eureka
