@@ -9,3 +9,10 @@ eureka:
   client:
     service-url:
       defaultZone: https://bootcamp-eurekaserver.azurewebsites.net/eureka
+  instance:
+    hostname: bootcamp-transactions.azurewebsites.net
+    secure-port-enabled: true
+    nonsecure-port-enabled: false
+    nonSecurePort: 80
+    securePort: 443
+    instanceId: ${eureka.instance.hostname}:${spring.application.name}:443
