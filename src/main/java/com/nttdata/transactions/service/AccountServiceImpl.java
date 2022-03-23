@@ -49,9 +49,10 @@ public class AccountServiceImpl implements AccountService {
         .get()
         .uri(urlAccount + "/get/number/{number}", number)
         .retrieve()
-        .onStatus(status -> status == NOT_FOUND, response -> Mono
-            .error(new CustomNotFoundException("Account " + number + NOT_FOUND_MESSAGE)))
+        .onStatus(NOT_FOUND::equals, response ->
+            Mono.error(new CustomNotFoundException("Account " + number + NOT_FOUND_MESSAGE)))
         .bodyToMono(AccountResponse.class)
+        .onErrorStop()
         .flatMap(account -> {
           if (account.getTypeAccount().getOption() == FIXED_TERM) {
             int currentDay = LocalDate.now().getDayOfMonth();
