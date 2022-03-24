@@ -3,7 +3,7 @@ server:
 
 spring:
   profiles:
-    active: local
+    active: @activatedProperties@
   application:
     name: transaction-service
 

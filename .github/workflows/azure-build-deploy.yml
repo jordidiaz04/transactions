@@ -18,7 +18,7 @@ jobs:
           java-version: '11'
 
       - name: Build with Maven
-        run: mvn -DSPRING_PROFILES_ACTIVE=azure clean install
+        run: mvn clean install -P azure
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
