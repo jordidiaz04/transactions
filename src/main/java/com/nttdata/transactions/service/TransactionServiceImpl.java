@@ -261,7 +261,8 @@ public class TransactionServiceImpl implements TransactionService {
           BigDecimal commission = account.getTypeAccount().getCommission() == null
               ? BigDecimal.ZERO :
               account.getTypeAccount().getCommission();
-          BigDecimal availableBalance = count >= setInteger(account.getTypeAccount().getMaxTransactions())
+          BigDecimal availableBalance = count >= setInteger(account
+              .getTypeAccount().getMaxTransactions())
               ? account.getBalance().subtract(commission) :
               account.getBalance();
           account.setAvailableBalance(availableBalance);

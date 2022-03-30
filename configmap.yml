@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: transaction-cm
+data:
+  active_profile: test
+  config_profile: prod

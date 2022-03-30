@@ -1,5 +1,4 @@
-FROM adoptopenjdk/openjdk8:alpine-slim
-ADD target/transactions-0.0.1-SNAPSHOT.jar app.jar
+FROM adoptopenjdk/openjdk11:alpine-slim
 EXPOSE 8083
-EXPOSE 27017
+ADD target/transactions.jar app.jar
 ENTRYPOINT ["java", "-jar","/app.jar"]

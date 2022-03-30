@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transaction-service-app
+  labels:
+    app: transaction-service-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transaction-service-app
+  template:
+    metadata:
+      labels:
+        app: transaction-service-app
+    spec:
+      containers:
+        - name: transaction-service-app
+          image: jordidiaz495/transaction-service:1.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8083
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: transaction-cm
+                  key: active_profile
+            - name: SPRING_CLOUD_CONFIG_PROFILE
+              valueFrom:
+                configMapKeyRef:
+                  name: transaction-cm
+                  key: config_profile
