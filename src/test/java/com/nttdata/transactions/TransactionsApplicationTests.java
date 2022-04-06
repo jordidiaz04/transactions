@@ -15,10 +15,12 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
 import static com.nttdata.transactions.utilities.Constants.TransactionType.ENTRY;
 import static com.nttdata.transactions.utilities.Constants.TransactionType.EXIT;
 import static org.mockito.Mockito.when;
@@ -54,7 +56,7 @@ class TransactionsApplicationTests {
 
     var responseBody = webTestClient
         .get()
-        .uri("/transactions/get/account/1234567890")
+        .uri("/get/account/1234567890")
         .exchange()
         .expectStatus().isOk()
         .returnResult(Transaction.class)
@@ -87,7 +89,7 @@ class TransactionsApplicationTests {
 
     var responseBody = webTestClient
         .get()
-        .uri("/transactions/get/credit/1234567890")
+        .uri("/get/credit/1234567890")
         .exchange()
         .expectStatus().isOk()
         .returnResult(Transaction.class)
@@ -125,7 +127,7 @@ class TransactionsApplicationTests {
 
     var responseBody = webTestClient
         .get()
-        .uri("/transactions/get/account/1234567890/commissions?start=01/03/2022&end=31/03/2022")
+        .uri("/get/account/1234567890/commissions?start=01/03/2022&end=31/03/2022")
         .exchange()
         .expectStatus().isOk()
         .returnResult(Transaction.class)
@@ -147,9 +149,9 @@ class TransactionsApplicationTests {
     Mono<String> monoResult = Mono.just(SUCCESS_MESSAGE);
     when(transactionService.depositAccount("1234567890", request)).thenReturn(monoResult);
 
-    var responseBody = webTestClient
+    webTestClient
         .post()
-        .uri("/transactions/deposit/account/1234567890")
+        .uri("/deposit/account/1234567890")
         .contentType(APPLICATION_JSON)
         .accept(APPLICATION_JSON)
         .body(Mono.just(request), TransactionRequest.class)
@@ -166,9 +168,9 @@ class TransactionsApplicationTests {
     Mono<String> monoResult = Mono.just(SUCCESS_MESSAGE);
     when(transactionService.depositAccount("1234567890", request)).thenReturn(monoResult);
 
-    var responseBody = webTestClient
+    webTestClient
         .post()
-        .uri("/transactions/deposit/account/1234567890")
+        .uri("/deposit/account/1234567890")
         .contentType(APPLICATION_JSON)
         .accept(APPLICATION_JSON)
         .body(Mono.just(request), TransactionRequest.class)
@@ -183,9 +185,9 @@ class TransactionsApplicationTests {
     Mono<String> monoResult = Mono.just(SUCCESS_MESSAGE);
     when(transactionService.depositAccount("1234567890", request)).thenReturn(monoResult);
 
-    var responseBody = webTestClient
+    webTestClient
         .post()
-        .uri("/transactions/deposit/account/1234567890")
+        .uri("/deposit/account/1234567890")
         .contentType(APPLICATION_JSON)
         .accept(APPLICATION_JSON)
         .body(Mono.just(request), TransactionRequest.class)
@@ -201,9 +203,9 @@ class TransactionsApplicationTests {
     Mono<String> monoResult = Mono.just(SUCCESS_MESSAGE);
     when(transactionService.withdrawalAccount("1234567890", request)).thenReturn(monoResult);
 
-    var responseBody = webTestClient
+    webTestClient
         .post()
-        .uri("/transactions/withdrawal/account/1234567890")
+        .uri("/withdrawal/account/1234567890")
         .contentType(APPLICATION_JSON)
         .accept(APPLICATION_JSON)
         .body(Mono.just(request), TransactionRequest.class)
@@ -220,9 +222,9 @@ class TransactionsApplicationTests {
     Mono<String> monoResult = Mono.just(SUCCESS_MESSAGE);
     when(transactionService.withdrawalAccount("1234567890", request)).thenReturn(monoResult);
 
-    var responseBody = webTestClient
+    webTestClient
         .post()
-        .uri("/transactions/withdrawal/account/1234567890")
+        .uri("/withdrawal/account/1234567890")
         .contentType(APPLICATION_JSON)
         .accept(APPLICATION_JSON)
         .body(Mono.just(request), TransactionRequest.class)
@@ -238,9 +240,9 @@ class TransactionsApplicationTests {
     Mono<String> monoResult = Mono.just(SUCCESS_MESSAGE);
     when(transactionService.withdrawalFromDebitCard("1234567890", request)).thenReturn(monoResult);
 
-    var responseBody = webTestClient
+    webTestClient
         .post()
-        .uri("/transactions/withdrawal/debitCard/1234567890")
+        .uri("/withdrawal/debitCard/1234567890")
         .contentType(APPLICATION_JSON)
         .accept(APPLICATION_JSON)
         .body(Mono.just(request), TransactionRequest.class)
@@ -257,9 +259,9 @@ class TransactionsApplicationTests {
     Mono<String> monoResult = Mono.just(SUCCESS_MESSAGE);
     when(transactionService.withdrawalFromDebitCard("1234567890", request)).thenReturn(monoResult);
 
-    var responseBody = webTestClient
+    webTestClient
         .post()
-        .uri("/transactions/withdrawal/debitCard/1234567890")
+        .uri("/withdrawal/debitCard/1234567890")
         .contentType(APPLICATION_JSON)
         .accept(APPLICATION_JSON)
         .body(Mono.just(request), TransactionRequest.class)
@@ -275,9 +277,9 @@ class TransactionsApplicationTests {
     Mono<String> monoResult = Mono.just("Successful transaction").map(x -> x);
     when(transactionService.transferBetweenAccounts("1234567890", "1234567891", request)).thenReturn(monoResult);
 
-    var responseBody = webTestClient
+    webTestClient
         .post()
-        .uri("/transactions/transfer/account/1234567890/account/1234567891")
+        .uri("/transfer/account/1234567890/account/1234567891")
         .body(Mono.just(request), TransactionRequest.class)
         .exchange()
         .expectStatus().isCreated();
@@ -292,9 +294,9 @@ class TransactionsApplicationTests {
     Mono<String> monoResult = Mono.just("Successful transaction").map(x -> x);
     when(transactionService.transferBetweenAccounts("1234567890", "1234567891", request)).thenReturn(monoResult);
 
-    var responseBody = webTestClient
+    webTestClient
         .post()
-        .uri("/transactions/transfer/account/1234567890/account/1234567891")
+        .uri("/transfer/account/1234567890/account/1234567891")
         .body(Mono.just(request), TransactionRequest.class)
         .exchange()
         .expectStatus().isCreated();
@@ -305,9 +307,9 @@ class TransactionsApplicationTests {
     Mono<String> monoResult = Mono.just(SUCCESS_MESSAGE);
     when(transactionService.payCredit("1234567890", BigDecimal.valueOf(200))).thenReturn(monoResult);
 
-    var responseBody = webTestClient
+    webTestClient
         .post()
-        .uri("/transactions/pay/credit/1234567890?amount=200")
+        .uri("/pay/credit/1234567890?amount=200")
         .exchange()
         .expectStatus().isCreated();
   }
@@ -317,9 +319,9 @@ class TransactionsApplicationTests {
     Mono<String> monoResult = Mono.just(SUCCESS_MESSAGE);
     when(transactionService.spendCredit("1234567890", BigDecimal.valueOf(200))).thenReturn(monoResult);
 
-    var responseBody = webTestClient
+    webTestClient
         .post()
-        .uri("/transactions/spend/credit/1234567890?amount=100")
+        .uri("/spend/credit/1234567890?amount=100")
         .exchange()
         .expectStatus().isCreated();
   }
