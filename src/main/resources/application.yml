@@ -2,10 +2,10 @@ server:
   port: '8083'
 
 spring:
-  profiles:
-    active: @activatedProperties@
   application:
     name: transaction-service
+  profiles:
+    active: ${PROFILE:dev}
 
 management:
   endpoints:

@@ -16,18 +16,20 @@ spec:
     spec:
       containers:
         - name: transaction-service-app
-          image: jordidiaz495/transaction-service:1.0
+          image: ${REPOSITORY_NAME}.azurecr.io/${APP_NAME}:${IMAGE_TAG}
           imagePullPolicy: Always
           ports:
             - containerPort: 8083
           env:
-            - name: SPRING_PROFILES_ACTIVE
+            - name: PROFILE
+              value: prod
+            - name: EUREKA_DEFAULT_ZONE
               valueFrom:
                 configMapKeyRef:
-                  name: transaction-cm
-                  key: active_profile
-            - name: SPRING_CLOUD_CONFIG_PROFILE
+                  name: eureka-cm
+                  key: eureka_default_zone
+            - name: CONFIG_SERVER_SVC
               valueFrom:
                 configMapKeyRef:
-                  name: transaction-cm
-                  key: config_profile
+                  name: eureka-cm
+                  key: config_server_svc

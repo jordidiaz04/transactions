@@ -3,7 +3,7 @@ spring:
     import: optional:configserver:http://localhost:7000
   cloud:
     config:
-      profile: local
+      profile: dev
 
 eureka:
   client:

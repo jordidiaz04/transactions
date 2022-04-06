@@ -1,0 +1,81 @@
+name: Build and deploy on AKS
+on:
+  push:
+    branches:
+      - master
+
+env:
+  APP_NAME: transaction-service
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '11'
+          check-latest: true
+
+      - name: Build with Maven
+        run: mvn clean package
+
+      - name: Connect to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.REGISTRY_NAME }}.azurecr.io
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and push image to ACR
+        run: |
+          docker build "$GITHUB_WORKSPACE/" -f  "Dockerfile" -t ${{ secrets.REGISTRY_NAME }}.azurecr.io/${{ env.APP_NAME }}:${{ github.sha }} --label dockerfile-path=Dockerfile
+          docker push ${{ secrets.REGISTRY_NAME }}.azurecr.io/${{ env.APP_NAME }}:${{ github.sha }}
+
+      - name: Set the target AKS cluster
+        uses: azure/aks-set-context@v1
+        with:
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
+          cluster-name: ${{ secrets.CLUSTER_NAME }}
+          resource-group: ${{ secrets.CLUSTER_RESOURCE_GROUP }}
+
+      - name: Create namespace in AKS
+        run: |
+          kubectl create namespace ${{ secrets.NAMESPACE }} --dry-run=client -o json | kubectl apply -f -
+
+      - name: Create image pull secret for ACR
+        uses: Azure/k8s-create-secret@v1.1
+        with:
+          container-registry-url: ${{ secrets.REGISTRY_NAME }}.azurecr.io
+          container-registry-username: ${{ secrets.REGISTRY_USERNAME }}
+          container-registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          secret-name: bootcamp-secret
+          namespace: ${{ secrets.NAMESPACE }}
+
+      - name: Replace tokens in yaml files
+        uses: cschleiden/replace-tokens@v1
+        with:
+          tokenPrefix: '${'
+          tokenSuffix: '}'
+          files: '["kubernetes/*.yml"]'
+        env:
+          REPOSITORY_NAME: ${{ secrets.REGISTRY_NAME }}
+          APP_NAME: ${{ env.APP_NAME }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+
+      - name: Deploy to AKS
+        uses: azure/k8s-deploy@v1
+        with:
+          manifests: |
+            kubernetes/deployment.yml
+            kubernetes/service.yml
+          images: |
+            ${{ secrets.REGISTRY_NAME }}.azurecr.io/${{ env.APP_NAME }}:${{ env.IMAGE_TAG }}
+          imagepullsecrets: |
+            bootcamp-secret
+          namespace: ${{ secrets.NAMESPACE }}
